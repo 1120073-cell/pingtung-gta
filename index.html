@@ -23,17 +23,17 @@ button{border:1px solid #ffffff99;background:#18212bd9;color:white;border-radius
  <div id="top">屏東 GTA｜市區測試版<br><span id="state">步行中</span></div>
  <div id="help">WASD／方向鍵移動・滑鼠拖曳轉向<br>V 切換視角・E 上下車</div>
  <div id="stick"><div id="knob"></div></div>
-<div id="actions"><button id="view">切換視角 V</button><button id="enter">上車 E</button></div>
+ <div id="actions"><button id="view">切換視角 V</button><button id="enter">上車 E</button></div>
  <div id="drive"><button id="left">◀</button><button id="gas">前進</button><button id="brake">煞車</button><button id="right">▶</button><button id="exit">下車 E</button></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 (()=> {
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc8df);scene.fog=new THREE.Fog(0x9fc8df,75,240);
 const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,500);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xeaf6ff,0x64704e,2));
-const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(-40,80,30);sun.castShadow=true;scene.add(sun);
+ const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(-40,80,30);sun.castShadow=true;scene.add(sun);
 const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.85});
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),mat(0x7c9c69));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
 function box(w,h,d,x,y,z,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
@@ -43,7 +43,7 @@ for(let i=-110;i<=110;i+=8){box(.16,.02,1.6,i,.06,0,0xf4e7b2);box(1.6,.02,.16,0,
 for(const s of [-1,1]){box(3,.12,240,s*10.5,.02,0,0xb8b5a9);box(240,.12,3,0,.02,s*10.5,0xb8b5a9)}
 // Buildings along streets, varied heights and colors
 const colors=[0xd8c7ad,0xe8dfd0,0xc7d0c8,0xd7b8a2,0xbfc8d5,0xe6d2bd,0xb8b09d];
-2,s*23,colors[Math.floor(Math.random()*colors.length)]); 
+for(let x=-105;x<=105;x+=15){for(const s of [-1,1]){let h=8+Math.random()*18,w=9+Math.random()*4;let b=box(w,h,9,x,h/2,s*23,colors[Math.floor(Math.random()*colors.length)]); 
 for(let yy=2;yy<h-1;yy+=3)for(let xx=-w/2+1;xx<w/2-1;xx+=2.5){const win=new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.5),mat(0x8db7c4));win.position.set(x+xx,yy,s*18.42);scene.add(win)}
 }}
 for(let z=-105;z<=105;z+=15){for(const s of [-1,1]){let h=8+Math.random()*16,w=9+Math.random()*4;box(9,h,w,s*23,h/2,z,colors[Math.floor(Math.random()*colors.length)])}}
@@ -63,14 +63,14 @@ const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.65,.65,1.9),mat(0x8eb4c5));ca
 for(const x of [-1,1])for(const z of [-1.3,1.3]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,12),mat(0x202326));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.38,z);car.add(wheel)}
 let driving=false,first=false,speed=0,steer=0;const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='v')toggleView();if(e.key.toLowerCase()==='e')toggleCar()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function toggleView(){first=!first;document.getElementById('view').textContent=first?'切換第三人稱 V':'切換視角 V'}
-function toggleCar(){if(!driving&&player.position.distanceTo(car.position)<4){driving=true;player.visible=false;speed=0}else if(driving){driving=false;player.visible=true;player.position.copy(car.position).add(new THREE.Vector3(2,0,0));}}
+function toggleCar(){if(!
+driving&&player.position.distanceTo(car.position)<4){driving=true;player.visible=false;speed=0}else if(driving){driving=false;player.visible=true;player.position.copy(car.position).add(new THREE.Vector3(2,0,0));}}
 document.getElementById('view').onclick=toggleView;document.getElementById('enter').onclick=toggleCar;document.getElementById('exit').onclick=toggleCar;
 const held={};['gas','brake','left','right'].forEach(id=>{const b=document.getElementById(id);b.onpointerdown=e=>{e.preventDefault();held[id]=true};b.onpointerup=b.onpointercancel=()=>held[id]=false});
 const stick=document.getElementById('stick'),knob=document.getElementById('knob');let joy={x:0,y:0},pointer=null;
 stick.onpointerdown=e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);moveStick(e)};stick.onpointermove=e=>{if(e.pointerId===pointer)moveStick(e)};stick.onpointerup=stick.onpointercancel=()=>{pointer=null;joy={x:0,y:0};knob.style.left='36px';knob.style.top='36px'};
 function moveStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),max=38;if(l>max){dx*=max/l;dy*=max/l}joy={x:dx/max,y:dy/max};knob.style.left=(36+dx)+'px';knob.style.top=(36+dy)+'px'}
 let dragging=false,lastX=0;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){dragging=true;lastX=e.clientX}});addEventListener('pointerup',()=>dragging=false);addEventListener('pointermove',e=>{if(dragging&&!driving){player.rotation.y-=(e.clientX-lastX)*.006;lastX=e.clientX}});
-for(let x=-105;x<=105;x+=15){for(const s of [-1,1]){let h=8+Math.random()*18,w=9+Math.random()*4;let b=box(w,h,9,x,h/
 function update(){requestAnimationFrame(update);const forward=(keys.w||keys.arrowup?-1:keys.s||keys.arrowdown?1:0)+(-joy.y);const side=(keys.a||keys.arrowleft?1:keys.d||keys.arrowright?-1:0)+joy.x;
 if(driving){const accel=(keys.w||keys.arrowup||held.gas)?1:0,brake=(keys.s||keys.arrowdown||held.brake)?1:0;speed+=(accel*.018-brake*.025);speed*=.985;speed=Math.max(-.12,Math.min(.28,speed));const turn=(keys.a||keys.arrowleft||held.left?1:0)-(keys.d||keys.arrowright||held.right?1:0);car.rotation.y+=turn*speed*.055;car.translateZ(-speed*2);car.position.x=Math.max(-115,Math.min(115,car.position.x));car.position.z=Math.max(-115,Math.min(115,car.position.z));}
 else{const moving=Math.abs(forward)+Math.abs(side)>0.05;if(moving){player.rotation.y+=side*.045;player.translateZ(forward*.11)}player.position.x=Math.max(-115,Math.min(115,player.position.x));player.position.z=Math.max(-115,Math.min(115,player.position.z));}
