@@ -1,2 +1,2 @@
-# pingtung-gta
-屏東市3D開放世界遊戲
+# KaohSiung-gta
+高雄市3D開放世界遊戲
