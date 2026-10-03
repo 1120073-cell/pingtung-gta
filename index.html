@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>屏東 GTA｜市區測試版</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9fc8df;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif}canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 4px #222}
+#top{position:absolute;top:12px;left:12px;background:#111a;padding:9px 13px;border-radius:12px;font-size:14px}
+#help{position:absolute;top:12px;right:12px;background:#111a;padding:8px 11px;border-radius:10px;font-size:12px;max-width:190px;text-align:right}
+button{border:1px solid #ffffff99;background:#18212bd9;color:white;border-radius:12px;padding:10px 13px;font-size:14px;font-weight:700;pointer-events:auto;touch-action:manipulation}
+#actions{position:absolute;right:14px;bottom:22px;display:flex;flex-direction:column;gap:9px;align-items:flex-end}
+#stick{position:absolute;left:18px;bottom:20px;width:124px;height:124px;border-radius:50%;background:#18212b66;border:2px solid #ffffff88;pointer-events:auto;touch-action:none}
+#knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:#ffffffc9;border:2px solid #34404c}
+#drive{display:none;position:absolute;left:50%;bottom:24px;transform:translateX(-50%);gap:8px;pointer-events:auto}
+#drive button{min-width:58px}
+@media(min-width:800px){#stick{opacity:.55}#help{max-width:300px}}
+</style>
+</head>
+<body>
+<div id="hud">
+ <div id="top">屏東 GTA｜市區測試版<br><span id="state">步行中</span></div>
+ <div id="help">WASD／方向鍵移動・滑鼠拖曳轉向<br>V 切換視角・E 上下車</div>
+ <div id="stick"><div id="knob"></div></div>
+<div id="actions"><button id="view">切換視角 V</button><button id="enter">上車 E</button></div>
+ <div id="drive"><button id="left">◀</button><button id="gas">前進</button><button id="brake">煞車</button><button id="right">▶</button><button id="exit">下車 E</button></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(()=> {
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc8df);scene.fog=new THREE.Fog(0x9fc8df,75,240);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,500);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xeaf6ff,0x64704e,2));
+const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(-40,80,30);sun.castShadow=true;scene.add(sun);
+const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.85});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),mat(0x7c9c69));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
+function box(w,h,d,x,y,z,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
+// Roads and sidewalks: small fictionalized downtown block layout
+box(18,.08,240,0,0,0,0x34383b);box(240,.08,18,0,0,0,0x34383b);
+for(let i=-110;i<=110;i+=8){box(.16,.02,1.6,i,.06,0,0xf4e7b2);box(1.6,.02,.16,0,.06,i,0xf4e7b2)}
+for(const s of [-1,1]){box(3,.12,240,s*10.5,.02,0,0xb8b5a9);box(240,.12,3,0,.02,s*10.5,0xb8b5a9)}
+// Buildings along streets, varied heights and colors
+const colors=[0xd8c7ad,0xe8dfd0,0xc7d0c8,0xd7b8a2,0xbfc8d5,0xe6d2bd,0xb8b09d];
+2,s*23,colors[Math.floor(Math.random()*colors.length)]); 
+for(let yy=2;yy<h-1;yy+=3)for(let xx=-w/2+1;xx<w/2-1;xx+=2.5){const win=new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.5),mat(0x8db7c4));win.position.set(x+xx,yy,s*18.42);scene.add(win)}
+}}
+for(let z=-105;z<=105;z+=15){for(const s of [-1,1]){let h=8+Math.random()*16,w=9+Math.random()*4;box(9,h,w,s*23,h/2,z,colors[Math.floor(Math.random()*colors.length)])}}
+// trees
+function tree(x,z){let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,2,7),mat(0x705039));trunk.position.set(x,1,z);scene.add(trunk);let crown=new THREE.Mesh(new THREE.SphereGeometry(1.5,8,7),mat(0x3f7944));crown.position.set(x,3,z);crown.scale.set(1,1.15,1);crown.castShadow=true;scene.add(crown)}
+for(let i=-100;i<=100;i+=12){tree(i,13);tree(i,-13);tree(13,i);tree(-13,i)}
+// player
+const player=new THREE.Group();scene.add(player);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.85,4,8),mat(0x2b536e));body.position.y=1.05;body.castShadow=true;player.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.28,12,10),mat(0xe0b18b));head.position.y=1.85;player.add(head);
+const legs=new THREE.Mesh(new THREE.BoxGeometry(.55,.65,.35),mat(0x30343b));legs.position.set(0,.38,0);player.add(legs);
+player.position.set(0,0,4);
+// car
+const car=new THREE.Group();scene.add(car);car.position.set(3,0,4);
+const chassis=new THREE.Mesh(new THREE.BoxGeometry(2.1,.65,4),mat(0xc13d35));chassis.position.y=.65;chassis.castShadow=true;car.add(chassis);
+const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.65,.65,1.9),mat(0x8eb4c5));cabin.position.set(0,1.25,-.15);car.add(cabin);
+for(const x of [-1,1])for(const z of [-1.3,1.3]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,12),mat(0x202326));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.38,z);car.add(wheel)}
+let driving=false,first=false,speed=0,steer=0;const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='v')toggleView();if(e.key.toLowerCase()==='e')toggleCar()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function toggleView(){first=!first;document.getElementById('view').textContent=first?'切換第三人稱 V':'切換視角 V'}
+function toggleCar(){if(!driving&&player.position.distanceTo(car.position)<4){driving=true;player.visible=false;speed=0}else if(driving){driving=false;player.visible=true;player.position.copy(car.position).add(new THREE.Vector3(2,0,0));}}
+document.getElementById('view').onclick=toggleView;document.getElementById('enter').onclick=toggleCar;document.getElementById('exit').onclick=toggleCar;
+const held={};['gas','brake','left','right'].forEach(id=>{const b=document.getElementById(id);b.onpointerdown=e=>{e.preventDefault();held[id]=true};b.onpointerup=b.onpointercancel=()=>held[id]=false});
+const stick=document.getElementById('stick'),knob=document.getElementById('knob');let joy={x:0,y:0},pointer=null;
+stick.onpointerdown=e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);moveStick(e)};stick.onpointermove=e=>{if(e.pointerId===pointer)moveStick(e)};stick.onpointerup=stick.onpointercancel=()=>{pointer=null;joy={x:0,y:0};knob.style.left='36px';knob.style.top='36px'};
+function moveStick(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),max=38;if(l>max){dx*=max/l;dy*=max/l}joy={x:dx/max,y:dy/max};knob.style.left=(36+dx)+'px';knob.style.top=(36+dy)+'px'}
+let dragging=false,lastX=0;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){dragging=true;lastX=e.clientX}});addEventListener('pointerup',()=>dragging=false);addEventListener('pointermove',e=>{if(dragging&&!driving){player.rotation.y-=(e.clientX-lastX)*.006;lastX=e.clientX}});
+for(let x=-105;x<=105;x+=15){for(const s of [-1,1]){let h=8+Math.random()*18,w=9+Math.random()*4;let b=box(w,h,9,x,h/
+function update(){requestAnimationFrame(update);const forward=(keys.w||keys.arrowup?-1:keys.s||keys.arrowdown?1:0)+(-joy.y);const side=(keys.a||keys.arrowleft?1:keys.d||keys.arrowright?-1:0)+joy.x;
+if(driving){const accel=(keys.w||keys.arrowup||held.gas)?1:0,brake=(keys.s||keys.arrowdown||held.brake)?1:0;speed+=(accel*.018-brake*.025);speed*=.985;speed=Math.max(-.12,Math.min(.28,speed));const turn=(keys.a||keys.arrowleft||held.left?1:0)-(keys.d||keys.arrowright||held.right?1:0);car.rotation.y+=turn*speed*.055;car.translateZ(-speed*2);car.position.x=Math.max(-115,Math.min(115,car.position.x));car.position.z=Math.max(-115,Math.min(115,car.position.z));}
+else{const moving=Math.abs(forward)+Math.abs(side)>0.05;if(moving){player.rotation.y+=side*.045;player.translateZ(forward*.11)}player.position.x=Math.max(-115,Math.min(115,player.position.x));player.position.z=Math.max(-115,Math.min(115,player.position.z));}
+const target=driving?car:player;const focus=target.position.clone();focus.y+=driving?1.1:1.3;
+if(first){camera.position.copy(focus).add(new THREE.Vector3(0,driving?1.0:0.35,0));const dir=new THREE.Vector3(0,0,-1).applyQuaternion(target.quaternion);camera.lookAt(camera.position.clone().add(dir.multiplyScalar(12)))}
+else{const offset=new THREE.Vector3(0,4.2,driving?8:6).applyQuaternion(target.quaternion);camera.position.lerp(focus.clone().add(offset),.12);camera.lookAt(focus)}
+document.getElementById('state').textContent=driving?'駕駛中｜按 E 下車':'步行中｜靠近紅色汽車按 E 上車';
+document.getElementById('enter').style.display=driving?'none':'block';document.getElementById('drive').style.display=driving?'flex':'none';
+renderer.render(scene,camera)}
+update();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+})();
+</script>
+</body></html>
